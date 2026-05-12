@@ -29,6 +29,10 @@ ReTechEx focuses on building a practical web based solution for e-waste recyclin
 
 <img src="docs/images/marketplace-page.png" alt="ReTechEx marketplace page" width="100%">
 
+### Customer Login
+
+<img src="docs/images/customer-login-page.png" alt="ReTechEx customer login page" width="100%">
+
 ### Admin Login
 
 <img src="docs/images/admin-login-page.png" alt="ReTechEx admin login page" width="100%">
