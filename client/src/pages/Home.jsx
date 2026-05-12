@@ -455,6 +455,9 @@ const Home = () => {
                       src={assets.pic1}
                       alt="Green planet with recycling arrows"
                       className="w-full h-auto rounded-xl object-contain drop-shadow-[0_40px_60px_rgba(0,0,0,.35)]"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
                     />
                     <div aria-hidden className="absolute -inset-x-8 -bottom-10 h-24 rounded-full bg-black/25 blur-3xl" />
                   </div>
