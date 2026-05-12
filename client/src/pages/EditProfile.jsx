@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
 import { User, Mail, Phone, MapPin, Camera } from 'lucide-react';
 import PasswordInput from '../components/PasswordInput';
+import { resolveImageUrl } from '../utils/image';
 
 const EditProfile = () => {
   const { user, updateUser } = useAuth();
@@ -43,8 +44,7 @@ const EditProfile = () => {
       });
       
       if (user.image) {
-        const apiUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-        setImagePreview(`${apiUrl}${user.image}`);
+        setImagePreview(resolveImageUrl(user.image));
       }
     }
   }, [user]);

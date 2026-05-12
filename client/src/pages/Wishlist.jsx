@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { wishlistAPI, cartAPI } from '../services/api';
 import { Heart, ShoppingCart, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { resolveImageUrl } from '../utils/image';
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState(null);
@@ -69,7 +70,7 @@ const Wishlist = () => {
             <div key={item.product._id} className="card hover:shadow-lg transition">
               {item.product.images && item.product.images[0] ? (
                 <img
-                  src={item.product.images[0]}
+                  src={resolveImageUrl(item.product.images[0])}
                   alt={item.product.name}
                   className="w-full h-48 object-cover rounded-lg mb-4"
                 />

@@ -14,6 +14,9 @@ This repository was developed as a student group project for the Information Tec
 | Student Registration Number | IT23833548 |
 | Student Name | Afnath Ahamed |
 | GitHub Repository | https://github.com/Afnath-max/Retechex-ecommerce-recycling |
+| Live Frontend | https://retechex-ecommerce-recycling.vercel.app |
+| Backend API | https://server-afn-max.vercel.app |
+| Backend Health Check | https://server-afn-max.vercel.app/health |
 
 ## Group Project Scope
 
@@ -50,6 +53,22 @@ The project is split into two apps:
 
 The frontend runs on port `5173` and proxies API requests to the backend on port `3000`.
 
+## Live Deployment
+
+| Service | URL | Status |
+|---|---|---|
+| Frontend | https://retechex-ecommerce-recycling.vercel.app | Deployed on Vercel |
+| Backend API | https://server-afn-max.vercel.app | Deployed on Vercel |
+| Health Check | https://server-afn-max.vercel.app/health | Returns backend status |
+
+The production frontend is configured with:
+
+```env
+VITE_API_URL=https://server-afn-max.vercel.app/api
+```
+
+The backend uses MongoDB Atlas for production data and Vercel Blob for persistent uploaded product and profile images.
+
 ## Main Features
 
 - Customer registration, login, profile editing, and password reset flow
@@ -72,7 +91,7 @@ The frontend runs on port `5173` and proxies API requests to the backend on port
 | Database | MongoDB, Mongoose |
 | Auth | JWT, bcryptjs |
 | Email | Nodemailer |
-| Files | Multer |
+| Files | Multer, Vercel Blob |
 | Reports | PDFKit |
 
 ## Folder Structure
@@ -173,6 +192,14 @@ SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 SMTP_FROM="ReTechEx" <your-email@gmail.com>
 ```
+
+Optional upload storage for Vercel:
+
+```env
+BLOB_READ_WRITE_TOKEN=your-vercel-blob-read-write-token
+```
+
+If `BLOB_READ_WRITE_TOKEN` is present, uploads are stored in Vercel Blob. If it is missing, uploads are stored locally in `server/uploads`.
 
 ### 5. Install Frontend Dependencies
 
@@ -291,6 +318,7 @@ The backend reads these environment variables:
 | `SMTP_USER` | No | SMTP username |
 | `SMTP_PASS` | No | SMTP password or app password |
 | `SMTP_FROM` | No | Verified sender address |
+| `BLOB_READ_WRITE_TOKEN` | No | Vercel Blob token for persistent production uploads |
 | `ADMIN_SECRET` | No | Optional key for protected discount config route |
 
 ## Troubleshooting
@@ -359,6 +387,26 @@ Make sure:
 - `server/.env` has `CORS_ORIGIN=http://localhost:5173`.
 - `client/vite.config.js` proxy points `/api` to `http://localhost:3000`.
 
+For the deployed frontend, make sure Vercel has:
+
+```env
+VITE_API_URL=https://server-afn-max.vercel.app/api
+```
+
+### MongoDB Atlas Blocks Production Backend
+
+If the deployed backend returns `500` and Vercel logs show that MongoDB Atlas cannot connect, open MongoDB Atlas and add a Network Access entry:
+
+```text
+0.0.0.0/0
+```
+
+Use a strong database password when allowing access from anywhere.
+
+### Uploaded Images Do Not Appear in Production
+
+Local files in `server/uploads` are not automatically available on Vercel. Production uploads should use Vercel Blob through `BLOB_READ_WRITE_TOKEN`. Existing local images may need to be uploaded again from the app or admin panel.
+
 ## Production Notes
 
 Before deploying:
@@ -368,6 +416,7 @@ Before deploying:
 - Store environment variables in the hosting provider, not in Git.
 - Configure production CORS to the deployed frontend URL.
 - Use a managed MongoDB database such as MongoDB Atlas.
+- Use Vercel Blob or another object storage service for persistent uploaded images.
 - Configure a verified SMTP sender for email delivery.
 
 ## Repository

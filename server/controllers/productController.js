@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import Discount from '../models/Discount.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { saveUploadedImage } from '../utils/fileStorage.js';
 
 // @desc    Get all products with filters
 // @route   GET /api/products
@@ -135,8 +136,9 @@ export const createProduct = asyncHandler(async (req, res) => {
     status,
   } = req.body;
 
-  // ✅ FIXED: Store image in images array
-  const images = req.file ? [`/uploads/${req.file.filename}`] : [];
+  // Store image in images array. On Vercel this becomes a Blob URL.
+  const imageUrl = await saveUploadedImage(req.file, 'products');
+  const images = imageUrl ? [imageUrl] : [];
 
   // Cast numerics
   const prod = await Product.create({
@@ -184,13 +186,12 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if ('stockQuantity' in req.body) payload.stockQuantity = Number(req.body.stockQuantity);
   if ('lowStockThreshold' in req.body) payload.lowStockThreshold = Number(req.body.lowStockThreshold);
 
-  // ✅ FIXED: Add new image to images array
   if (req.file) {
-  const newImagePath = `/uploads/${req.file.filename}`;
-  // NOTE: This REPLACES any existing images with the new one.
-  // If you need to keep previous images, you'd need a more complex array management on the frontend.
-  payload.images = [newImagePath]; 
-}
+    const newImagePath = await saveUploadedImage(req.file, 'products');
+    // NOTE: This REPLACES any existing images with the new one.
+    // If you need to keep previous images, you'd need a more complex array management on the frontend.
+    payload.images = [newImagePath];
+  }
 
   const updated = await Product.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
   res.json({ success: true, message: 'Product updated successfully', product: updated });

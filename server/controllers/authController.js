@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import { generateToken } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { generateOTP, sendOTPEmail, sendWelcomeEmail } from '../utils/emailService.js';
+import { saveUploadedImage } from '../utils/fileStorage.js';
 
 // @desc    Register new user
 // @route   POST /api/auth/register
@@ -20,8 +21,8 @@ export const register = asyncHandler(async (req, res) => {
   const otp = generateOTP();
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-  // If a file was uploaded by multer, store local path (served via /uploads)
-  const image = req.file ? `/uploads/${req.file.filename}` : '';
+  // If a file was uploaded, store it locally in dev or as a Blob URL on Vercel.
+  const image = await saveUploadedImage(req.file, 'profiles');
 
   // Create user (unverified)
   const user = await User.create({
@@ -168,9 +169,9 @@ export const updateProfile = asyncHandler(async (req, res) => {
   user.name = req.body.name || user.name;
   user.phone = req.body.phone || user.phone;
 
-  // If a new file was uploaded, update local image path
+  // If a new file was uploaded, update image path/URL
   if (req.file) {
-    user.image = `/uploads/${req.file.filename}`; // <-- local path
+    user.image = await saveUploadedImage(req.file, 'profiles');
   } else if (typeof req.body.image === 'string') {
     // Optional: if a direct URL was provided (keep this if you want to support URL pasting)
     user.image = req.body.image || user.image;
