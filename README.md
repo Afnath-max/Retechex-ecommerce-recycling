@@ -2,6 +2,23 @@
 
 ReTechEx is a full stack e-waste recycling and ecommerce platform built with React, Vite, Express, MongoDB, and Tailwind CSS. The application supports customer recycling appointments, marketplace purchases, cart and wishlist flows, order tracking, admin management, staff operations, discounts, contact messages, and PDF report generation.
 
+## Academic Project Details
+
+This repository was developed as a student group project for the Information Technology Project module.
+
+| Detail | Information |
+|---|---|
+| Module | IT2080 - Information Technology Project |
+| Project Type | Group Project |
+| Project Title | ReTechEx Ecommerce Recycling Platform |
+| Student Registration Number | IT23833548 |
+| Student Name | Afnath Ahamed |
+| GitHub Repository | https://github.com/Afnath-max/Retechex-ecommerce-recycling |
+
+## Group Project Scope
+
+ReTechEx focuses on building a practical web based solution for e-waste recycling and refurbished electronics ecommerce. The system includes separate user experiences for customers, staff members, and administrators, allowing the group project to demonstrate project planning, full stack development, role based workflows, database design, and real world usability considerations.
+
 ## Project Overview
 
 The project is split into two apps:
