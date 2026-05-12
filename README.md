@@ -19,6 +19,24 @@ This repository was developed as a student group project for the Information Tec
 
 ReTechEx focuses on building a practical web based solution for e-waste recycling and refurbished electronics ecommerce. The system includes separate user experiences for customers, staff members, and administrators, allowing the group project to demonstrate project planning, full stack development, role based workflows, database design, and real world usability considerations.
 
+## Application Screenshots
+
+### Home Page
+
+<img src="docs/images/home-page.png" alt="ReTechEx home page" width="100%">
+
+### Marketplace
+
+<img src="docs/images/marketplace-page.png" alt="ReTechEx marketplace page" width="100%">
+
+### Admin Login
+
+<img src="docs/images/admin-login-page.png" alt="ReTechEx admin login page" width="100%">
+
+### Staff Login
+
+<img src="docs/images/staff-login-page.png" alt="ReTechEx staff login page" width="100%">
+
 ## Project Overview
 
 The project is split into two apps:
