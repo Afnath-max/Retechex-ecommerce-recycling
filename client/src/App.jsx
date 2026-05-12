@@ -1,46 +1,47 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
-
-
-// Pages
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import EditProfile from './pages/EditProfile';
-import AdminLogin from './pages/auth/AdminLogin';
-import StaffLogin from './pages/auth/StaffLogin';
-import Marketplace from './pages/Marketplace';
-import ProductDetails from './pages/ProductDetails';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import MyOrders from './pages/MyOrders';
-import OrderDetails from './pages/OrderDetails';
-import MyAppointments from './pages/MyAppointments';
-import BookAppointment from './pages/BookAppointment';
-import Wishlist from './pages/Wishlist';
-import ContactUS from './pages/ContactUs';
 import Footer from './components/Footer';
 
-// Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminAppointments from './pages/admin/AdminAppointments';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminDiscounts from './pages/admin/AdminDiscounts';
-import AdminContactMessages from './pages/admin/ContactMessages';
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const EditProfile = lazy(() => import('./pages/EditProfile'));
+const AdminLogin = lazy(() => import('./pages/auth/AdminLogin'));
+const StaffLogin = lazy(() => import('./pages/auth/StaffLogin'));
+const Marketplace = lazy(() => import('./pages/Marketplace'));
+const ProductDetails = lazy(() => import('./pages/ProductDetails'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const MyOrders = lazy(() => import('./pages/MyOrders'));
+const OrderDetails = lazy(() => import('./pages/OrderDetails'));
+const MyAppointments = lazy(() => import('./pages/MyAppointments'));
+const BookAppointment = lazy(() => import('./pages/BookAppointment'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
+const ContactUS = lazy(() => import('./pages/ContactUs'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
+const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminAppointments = lazy(() => import('./pages/admin/AdminAppointments'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminDiscounts = lazy(() => import('./pages/admin/AdminDiscounts'));
+const AdminContactMessages = lazy(() => import('./pages/admin/ContactMessages'));
+const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
+const StaffInventory = lazy(() => import('./pages/staff/StaffInventory'));
+const StaffOrders = lazy(() => import('./pages/staff/StaffOrders'));
+const StaffAppointments = lazy(() => import('./pages/staff/StaffAppointments'));
 
-
-// Staff Pages
-import StaffDashboard from './pages/staff/StaffDashboard';
-import StaffInventory from './pages/staff/StaffInventory';
-import StaffOrders from './pages/staff/StaffOrders';
-import StaffAppointments from './pages/staff/StaffAppointments';
+function PageLoader() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-primary-600" />
+    </div>
+  );
+}
 
 // Conditional Navbar Component
 function ConditionalNavbar() {
@@ -81,17 +82,18 @@ function App() {
         <div className="min-h-screen flex flex-col">
           <ConditionalNavbar />
           <main className="flex-1">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/staff/login" element={<StaffLogin />} />
-              <Route path="/marketplace" element={<Marketplace />} />
-              <Route path="/products/:id" element={<ProductDetails />} />
-              <Route path="/contact" element={<ContactUS/>} />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/staff/login" element={<StaffLogin />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/products/:id" element={<ProductDetails />} />
+                <Route path="/contact" element={<ContactUS/>} />
 
               {/* Customer Routes */}
               <Route
@@ -255,8 +257,9 @@ function App() {
               <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
 
               {/* 404 */}
-              <Route path="*" element={<div className="flex items-center justify-center h-screen"><h1 className="text-2xl">404 - Page Not Found</h1></div>} />
-            </Routes>
+                <Route path="*" element={<div className="flex items-center justify-center h-screen"><h1 className="text-2xl">404 - Page Not Found</h1></div>} />
+              </Routes>
+            </Suspense>
           </main>
           <ConditionalFooter /> 
           <Toaster position="top-right" />
