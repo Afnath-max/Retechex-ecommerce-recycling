@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 
 import connectDB from './config/db.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { responseCache } from './middleware/responseCache.js';
 
 // Import routes
 import discountRoutes from './routes/discountRoutes.js';
@@ -75,6 +76,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
+app.use('/api', responseCache);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
