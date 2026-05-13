@@ -1,7 +1,7 @@
 // client/src/pages/Marketplace.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { productsAPI } from '../services/api';
+import { prefetchProducts, productsAPI } from '../services/api';
 import { Search, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,7 @@ const Marketplace = () => {
   }, [category]);
 
   const loadProducts = async () => {
+    setLoading(true);
     try {
       const params = {};
       if (category) params.category = category;
@@ -86,6 +87,8 @@ const Marketplace = () => {
             <button
               key={cat}
               onClick={() => setCategory(cat)}
+              onPointerEnter={() => prefetchProducts({ category: cat })}
+              onFocus={() => prefetchProducts({ category: cat })}
               className={`px-4 py-2 rounded-lg capitalize ${
                 category === cat
                   ? 'bg-primary-600 text-white'

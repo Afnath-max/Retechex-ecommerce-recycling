@@ -1,11 +1,106 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = API_URL.replace(/\/api\/?$/, '');
+const PRODUCTS_CACHE_TTL = 45 * 1000;
+const productsMemoryCache = new Map();
+let backendWarmupPromise = null;
 
 // Create axios instance (⚠️ no global Content-Type here)
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 15000,
 });
+
+const getProductsCacheKey = (params = {}) =>
+  JSON.stringify(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
+      .sort(([a], [b]) => a.localeCompare(b))
+  );
+
+const readProductsCache = (params = {}) => {
+  const key = getProductsCacheKey(params);
+  const cached = productsMemoryCache.get(key);
+  if (cached && Date.now() - cached.timestamp < PRODUCTS_CACHE_TTL) {
+    return cached.data;
+  }
+
+  try {
+    const raw = sessionStorage.getItem(`products:${key}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp >= PRODUCTS_CACHE_TTL) return null;
+    productsMemoryCache.set(key, parsed);
+    return parsed.data;
+  } catch {
+    return null;
+  }
+};
+
+const writeProductsCache = (params = {}, data) => {
+  const key = getProductsCacheKey(params);
+  const cacheableData = {
+    data: data.data,
+    status: data.status,
+    statusText: data.statusText,
+  };
+  const value = { timestamp: Date.now(), data: cacheableData };
+  productsMemoryCache.set(key, value);
+
+  try {
+    sessionStorage.setItem(`products:${key}`, JSON.stringify(value));
+  } catch {
+    // Storage may be unavailable in private modes; memory cache still helps.
+  }
+};
+
+const clearProductsCache = () => {
+  productsMemoryCache.clear();
+  try {
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith('products:'))
+      .forEach((key) => sessionStorage.removeItem(key));
+  } catch {}
+};
+
+const networkProductsRequest = async (params = {}) => {
+  const response = await api.get('/products', { params });
+  writeProductsCache(params, response);
+  return response;
+};
+
+const scheduleIdle = (task) => {
+  if (typeof window === 'undefined') return;
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(task, { timeout: 2500 });
+  } else {
+    window.setTimeout(task, 800);
+  }
+};
+
+export const warmBackend = () => {
+  if (backendWarmupPromise) return backendWarmupPromise;
+
+  backendWarmupPromise = fetch(`${API_BASE_URL}/health`, {
+    method: 'GET',
+    cache: 'no-store',
+  }).catch(() => null);
+
+  return backendWarmupPromise;
+};
+
+export const prefetchProducts = (params = {}) => {
+  if (readProductsCache(params)) return Promise.resolve();
+  return networkProductsRequest(params).catch(() => null);
+};
+
+export const warmPublicData = () => {
+  scheduleIdle(() => {
+    warmBackend();
+    prefetchProducts();
+  });
+};
 
 // Add token to requests
 api.interceptors.request.use(
@@ -61,12 +156,33 @@ export const authAPI = {
 
 // Products API
 export const productsAPI = {
-  getAll: (params) => api.get('/products', { params }),
+  getAll: async (params = {}) => {
+    const cached = readProductsCache(params);
+    if (cached) return cached;
+
+    return networkProductsRequest(params);
+  },
   getById: (id) => api.get(`/products/${id}`),
-  create: (data) => api.post('/products', data),
-  update: (id, data) => api.put(`/products/${id}`, data),
-  delete: (id) => api.delete(`/products/${id}`),
-  updateStock: (id, data) => api.patch(`/products/${id}/stock`, data),
+  create: async (data) => {
+    const response = await api.post('/products', data);
+    clearProductsCache();
+    return response;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/products/${id}`, data);
+    clearProductsCache();
+    return response;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/products/${id}`);
+    clearProductsCache();
+    return response;
+  },
+  updateStock: async (id, data) => {
+    const response = await api.patch(`/products/${id}/stock`, data);
+    clearProductsCache();
+    return response;
+  },
   getLowStock: (threshold) =>
     api.get('/products/alerts/low-stock', { params: { threshold } }),
 };

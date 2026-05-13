@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import { useAuth } from '../context/AuthContext';
 import { preloadDashboardRoute, preloadRoute } from '../routes/preloadRoutes';
+import { prefetchProducts } from '../services/api';
 
 const links = [
   { to: '/', label: 'HOME' },
@@ -18,8 +19,14 @@ const navLinkClass = ({ isActive }) =>
   ].join(' ');
 
 const preloadHandlers = (to) => ({
-  onPointerEnter: () => preloadRoute(to),
-  onFocus: () => preloadRoute(to),
+  onPointerEnter: () => {
+    preloadRoute(to);
+    if (to === '/marketplace') prefetchProducts();
+  },
+  onFocus: () => {
+    preloadRoute(to);
+    if (to === '/marketplace') prefetchProducts();
+  },
 });
 
 /* -------------------- Helpers -------------------- */

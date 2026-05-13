@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { pageLoaders } from './routes/preloadRoutes';
+import { warmPublicData } from './services/api';
 
 const Home = lazy(pageLoaders.home);
 const Login = lazy(pageLoaders.login);
@@ -77,6 +78,10 @@ function ConditionalFooter() {
 }
 
 function App() {
+  useEffect(() => {
+    warmPublicData();
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>
