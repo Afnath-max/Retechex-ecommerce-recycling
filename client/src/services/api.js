@@ -3,6 +3,7 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, '');
 const PRODUCTS_CACHE_TTL = 45 * 1000;
+const PRODUCTS_STALE_TTL = 5 * 60 * 1000;
 const productsMemoryCache = new Map();
 let backendWarmupPromise = null;
 
@@ -19,18 +20,21 @@ const getProductsCacheKey = (params = {}) =>
       .sort(([a], [b]) => a.localeCompare(b))
   );
 
-const readProductsCache = (params = {}) => {
+const readProductsCache = (params = {}, { allowStale = false } = {}) => {
   const key = getProductsCacheKey(params);
+  const maxAge = allowStale ? PRODUCTS_STALE_TTL : PRODUCTS_CACHE_TTL;
   const cached = productsMemoryCache.get(key);
-  if (cached && Date.now() - cached.timestamp < PRODUCTS_CACHE_TTL) {
+  if (cached && Date.now() - cached.timestamp < maxAge) {
     return cached.data;
   }
 
   try {
-    const raw = sessionStorage.getItem(`products:${key}`);
+    const raw =
+      sessionStorage.getItem(`products:${key}`) ||
+      localStorage.getItem(`products:${key}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (Date.now() - parsed.timestamp >= PRODUCTS_CACHE_TTL) return null;
+    if (Date.now() - parsed.timestamp >= maxAge) return null;
     productsMemoryCache.set(key, parsed);
     return parsed.data;
   } catch {
@@ -50,6 +54,7 @@ const writeProductsCache = (params = {}, data) => {
 
   try {
     sessionStorage.setItem(`products:${key}`, JSON.stringify(value));
+    localStorage.setItem(`products:${key}`, JSON.stringify(value));
   } catch {
     // Storage may be unavailable in private modes; memory cache still helps.
   }
@@ -61,6 +66,9 @@ const clearProductsCache = () => {
     Object.keys(sessionStorage)
       .filter((key) => key.startsWith('products:'))
       .forEach((key) => sessionStorage.removeItem(key));
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('products:'))
+      .forEach((key) => localStorage.removeItem(key));
   } catch {}
 };
 
@@ -96,8 +104,8 @@ export const prefetchProducts = (params = {}) => {
 };
 
 export const warmPublicData = () => {
+  warmBackend();
   scheduleIdle(() => {
-    warmBackend();
     prefetchProducts();
   });
 };
@@ -159,6 +167,12 @@ export const productsAPI = {
   getAll: async (params = {}) => {
     const cached = readProductsCache(params);
     if (cached) return cached;
+
+    const stale = readProductsCache(params, { allowStale: true });
+    if (stale) {
+      networkProductsRequest(params).catch(() => null);
+      return stale;
+    }
 
     return networkProductsRequest(params);
   },
