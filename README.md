@@ -1,28 +1,44 @@
-# ReTechExchange
+<h1 align="center">ReTechExchange</h1>
+
+<p align="center">
+  <strong>Full-Stack E-Waste Recycling & E-Commerce Platform</strong>
+</p>
 
 <p align="center">
   <img src="docs/images/retechex-hero.png" alt="ReTechExchange full stack e-waste recycling and ecommerce platform" width="100%">
 </p>
 
 <p align="center">
-  <strong>Full-stack e-waste recycling and ecommerce platform for sustainable refurbished electronics workflows.</strong>
+  Sustainable electronics recovery, refurbished product sales, role-based operations, and production-ready cloud deployment.
 </p>
 
 <p align="center">
-  <a href="https://retechex-ecommerce-recycling.vercel.app">Live Frontend</a>
-  ·
-  <a href="https://server-afn-max.vercel.app">Backend API</a>
-  ·
-  <a href="https://server-afn-max.vercel.app/health">Health Check</a>
+  <a href="https://retechex-ecommerce-recycling.vercel.app">
+    <img alt="Live Frontend" src="https://img.shields.io/badge/Live%20Frontend-ReTechExchange-00C2A8?style=for-the-badge&logo=vercel&logoColor=white">
+  </a>
+  <a href="https://server-afn-max.vercel.app">
+    <img alt="Backend API" src="https://img.shields.io/badge/Backend%20API-Online-111827?style=for-the-badge&logo=node.js&logoColor=white">
+  </a>
+  <a href="https://server-afn-max.vercel.app/health">
+    <img alt="Health Check" src="https://img.shields.io/badge/Health%20Check-Passing-16A34A?style=for-the-badge">
+  </a>
 </p>
 
 <p align="center">
   <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=111827">
   <img alt="Vite" src="https://img.shields.io/badge/Vite-Frontend-646CFF?logo=vite&logoColor=white">
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-CSS-38BDF8?logo=tailwindcss&logoColor=white">
   <img alt="Express" src="https://img.shields.io/badge/Express-API-111827?logo=express&logoColor=white">
   <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white">
   <img alt="Vercel" src="https://img.shields.io/badge/Vercel-Deployed-000000?logo=vercel&logoColor=white">
+  <img alt="Vercel Blob" src="https://img.shields.io/badge/Vercel%20Blob-Uploads-000000?logo=vercel&logoColor=white">
 </p>
+
+<p align="center">
+  <strong>Customer</strong> · <strong>Staff</strong> · <strong>Admin</strong>
+</p>
+
+## Overview
 
 ReTechExchange is a full-stack e-waste recycling and ecommerce platform built with React, Vite, Express, MongoDB, and Tailwind CSS. The application supports customer recycling appointments, marketplace purchases, cart and wishlist flows, order tracking, admin management, staff operations, discounts, contact messages, persistent uploads, and PDF report generation.
 
