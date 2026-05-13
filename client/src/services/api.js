@@ -4,7 +4,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, '');
 const PRODUCTS_CACHE_TTL = 45 * 1000;
 const PRODUCTS_STALE_TTL = 5 * 60 * 1000;
+const PRIVATE_CACHE_TTL = 30 * 1000;
+const PRIVATE_STALE_TTL = 2 * 60 * 1000;
 const productsMemoryCache = new Map();
+const privateMemoryCache = new Map();
 let backendWarmupPromise = null;
 
 // Create axios instance (⚠️ no global Content-Type here)
@@ -72,6 +75,94 @@ const clearProductsCache = () => {
   } catch {}
 };
 
+const getCacheScope = () => {
+  try {
+    const token = localStorage.getItem('token') || 'guest';
+    let hash = 0;
+    for (let index = 0; index < token.length; index += 1) {
+      hash = (hash << 5) - hash + token.charCodeAt(index);
+      hash |= 0;
+    }
+    return Math.abs(hash).toString(36);
+  } catch {
+    return 'guest';
+  }
+};
+
+const getPrivateCacheKey = (url, params = {}) =>
+  JSON.stringify({
+    scope: getCacheScope(),
+    url,
+    params: Object.entries(params || {})
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
+      .sort(([a], [b]) => a.localeCompare(b)),
+  });
+
+const readPrivateCache = (url, params = {}, { allowStale = false } = {}) => {
+  const key = getPrivateCacheKey(url, params);
+  const maxAge = allowStale ? PRIVATE_STALE_TTL : PRIVATE_CACHE_TTL;
+  const cached = privateMemoryCache.get(key);
+  if (cached && Date.now() - cached.timestamp < maxAge) return cached.data;
+
+  try {
+    const raw = sessionStorage.getItem(`private:${key}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp >= maxAge) return null;
+    privateMemoryCache.set(key, parsed);
+    return parsed.data;
+  } catch {
+    return null;
+  }
+};
+
+const writePrivateCache = (url, params = {}, response) => {
+  const key = getPrivateCacheKey(url, params);
+  const value = {
+    timestamp: Date.now(),
+    data: {
+      data: response.data,
+      status: response.status,
+      statusText: response.statusText,
+    },
+  };
+  privateMemoryCache.set(key, value);
+
+  try {
+    sessionStorage.setItem(`private:${key}`, JSON.stringify(value));
+  } catch {}
+};
+
+export const clearPrivateCache = () => {
+  privateMemoryCache.clear();
+  try {
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith('private:'))
+      .forEach((key) => sessionStorage.removeItem(key));
+  } catch {}
+};
+
+const networkCachedGet = async (url, config = {}) => {
+  const params = config.params || {};
+  const response = await api.get(url, config);
+  writePrivateCache(url, params, response);
+  return response;
+};
+
+const cachedGet = (url, config = {}) => {
+  const params = config.params || {};
+  const cached = readPrivateCache(url, params);
+  if (cached) return Promise.resolve(cached);
+
+  const stale = readPrivateCache(url, params, { allowStale: true });
+  if (stale) {
+    networkCachedGet(url, config).catch(() => null);
+    return Promise.resolve(stale);
+  }
+
+  return networkCachedGet(url, config);
+};
+
 const networkProductsRequest = async (params = {}) => {
   const response = await api.get('/products', { params });
   writeProductsCache(params, response);
@@ -126,6 +217,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      clearPrivateCache();
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -145,7 +237,7 @@ export const authAPI = {
     }),
 
   login: (data) => api.post('/auth/login', data),
-  getMe: () => api.get('/auth/me'),
+  getMe: () => cachedGet('/auth/me'),
   
   verifyOTP: (data) => api.post('/auth/verify-otp', data),
   resendOTP: () => api.post('/auth/resend-otp'),
@@ -176,105 +268,199 @@ export const productsAPI = {
 
     return networkProductsRequest(params);
   },
-  getById: (id) => api.get(`/products/${id}`),
+  getById: (id) => cachedGet(`/products/${id}`),
   create: async (data) => {
     const response = await api.post('/products', data);
     clearProductsCache();
+    clearPrivateCache();
     return response;
   },
   update: async (id, data) => {
     const response = await api.put(`/products/${id}`, data);
     clearProductsCache();
+    clearPrivateCache();
     return response;
   },
   delete: async (id) => {
     const response = await api.delete(`/products/${id}`);
     clearProductsCache();
+    clearPrivateCache();
     return response;
   },
   updateStock: async (id, data) => {
     const response = await api.patch(`/products/${id}/stock`, data);
     clearProductsCache();
+    clearPrivateCache();
     return response;
   },
   getLowStock: (threshold) =>
-    api.get('/products/alerts/low-stock', { params: { threshold } }),
+    cachedGet('/products/alerts/low-stock', { params: { threshold } }),
 };
 
 // Cart API
 export const cartAPI = {
-  get: () => api.get('/cart'),
-  add: (data) => api.post('/cart', data),
-  updateItem: (productId, data) =>
-    api.patch(`/cart/items/${productId}`, data),
-  removeItem: (productId) => api.delete(`/cart/items/${productId}`),
-  clear: () => api.delete('/cart'),
+  get: () => cachedGet('/cart'),
+  add: async (data) => {
+    const response = await api.post('/cart', data);
+    clearPrivateCache();
+    return response;
+  },
+  updateItem: async (productId, data) => {
+    const response = await api.patch(`/cart/items/${productId}`, data);
+    clearPrivateCache();
+    return response;
+  },
+  removeItem: async (productId) => {
+    const response = await api.delete(`/cart/items/${productId}`);
+    clearPrivateCache();
+    return response;
+  },
+  clear: async () => {
+    const response = await api.delete('/cart');
+    clearPrivateCache();
+    return response;
+  },
 };
 
 // Orders API
 export const ordersAPI = {
-  create: (data) => api.post('/orders', data),
-  getMy: (params) => api.get('/orders/my', { params }),
-  getById: (id) => api.get(`/orders/${id}`),
-  cancel: (id) => api.patch(`/orders/${id}/cancel`),
-  getAll: (params) => api.get('/orders/all/list', { params }),
-  updateStatus: (id, data) => api.patch(`/orders/${id}/status`, data),
-  updateAddress: (id, data) => api.patch(`/orders/${id}/address`, data),
+  create: async (data) => {
+    const response = await api.post('/orders', data);
+    clearPrivateCache();
+    return response;
+  },
+  getMy: (params) => cachedGet('/orders/my', { params }),
+  getById: (id) => cachedGet(`/orders/${id}`),
+  cancel: async (id) => {
+    const response = await api.patch(`/orders/${id}/cancel`);
+    clearPrivateCache();
+    return response;
+  },
+  getAll: (params) => cachedGet('/orders/all/list', { params }),
+  updateStatus: async (id, data) => {
+    const response = await api.patch(`/orders/${id}/status`, data);
+    clearPrivateCache();
+    return response;
+  },
+  updateAddress: async (id, data) => {
+    const response = await api.patch(`/orders/${id}/address`, data);
+    clearPrivateCache();
+    return response;
+  },
   downloadPDF: (orderId) =>
     api.get(`/orders/${orderId}/pdf`, { responseType: 'blob' }),
-  delete: (id) => api.delete(`/orders/${id}`), // ⬅️ ADDED
+  delete: async (id) => {
+    const response = await api.delete(`/orders/${id}`);
+    clearPrivateCache();
+    return response;
+  }, // ⬅️ ADDED
 };
 
 // Appointments API
 export const appointmentsAPI = {
-  create: (data) => api.post('/appointments', data),
-  getMy: (params) => api.get('/appointments/my', { params }),
-  getById: (id) => api.get(`/appointments/${id}`),
-  update: (id, data) => api.patch(`/appointments/${id}`, data),
-  cancel: (id) => api.patch(`/appointments/${id}/cancel`),
-  getAll: (params) => api.get('/appointments/all/list', { params }),
-  updateStatus: (id, data) => api.patch(`/appointments/${id}/status`, data),
+  create: async (data) => {
+    const response = await api.post('/appointments', data);
+    clearPrivateCache();
+    return response;
+  },
+  getMy: (params) => cachedGet('/appointments/my', { params }),
+  getById: (id) => cachedGet(`/appointments/${id}`),
+  update: async (id, data) => {
+    const response = await api.patch(`/appointments/${id}`, data);
+    clearPrivateCache();
+    return response;
+  },
+  cancel: async (id) => {
+    const response = await api.patch(`/appointments/${id}/cancel`);
+    clearPrivateCache();
+    return response;
+  },
+  getAll: (params) => cachedGet('/appointments/all/list', { params }),
+  updateStatus: async (id, data) => {
+    const response = await api.patch(`/appointments/${id}/status`, data);
+    clearPrivateCache();
+    return response;
+  },
   downloadReport: (params) =>
     api.get('/appointments/report/pdf', {
       params,
       responseType: 'blob',
     }),
-  delete: (id) => api.delete(`/appointments/${id}`), // ⬅️ ADDED
+  delete: async (id) => {
+    const response = await api.delete(`/appointments/${id}`);
+    clearPrivateCache();
+    return response;
+  }, // ⬅️ ADDED
 };
 
 // Wishlist API
 export const wishlistAPI = {
-  get: () => api.get('/wishlist'),
-  add: (productId) => api.post('/wishlist', { productId }),
-  remove: (productId) => api.delete(`/wishlist/${productId}`),
-  check: (productId) => api.get(`/wishlist/check/${productId}`),
+  get: () => cachedGet('/wishlist'),
+  add: async (productId) => {
+    const response = await api.post('/wishlist', { productId });
+    clearPrivateCache();
+    return response;
+  },
+  remove: async (productId) => {
+    const response = await api.delete(`/wishlist/${productId}`);
+    clearPrivateCache();
+    return response;
+  },
+  check: (productId) => cachedGet(`/wishlist/check/${productId}`),
 };
 
 // Admin API
 export const adminAPI = {
-  getUsers: (params) => api.get('/admin/users', { params }),
-  createStaff: (data) => api.post('/admin/staff', data),
-  deleteUser: (id) => api.delete(`/admin/users/${id}`),
-  updateUserRole: (id, role) =>
-    api.patch(`/admin/users/${id}/role`, { role }),
-  getDashboardStats: () => api.get('/admin/dashboard/stats'),
+  getUsers: (params) => cachedGet('/admin/users', { params }),
+  createStaff: async (data) => {
+    const response = await api.post('/admin/staff', data);
+    clearPrivateCache();
+    return response;
+  },
+  deleteUser: async (id) => {
+    const response = await api.delete(`/admin/users/${id}`);
+    clearPrivateCache();
+    return response;
+  },
+  updateUserRole: async (id, role) => {
+    const response = await api.patch(`/admin/users/${id}/role`, { role });
+    clearPrivateCache();
+    return response;
+  },
+  getDashboardStats: () => cachedGet('/admin/dashboard/stats'),
   getRevenueTrend: (period) =>
-    api.get('/admin/dashboard/revenue-trend', { params: { period } }),
-  getOrderDistribution: () => api.get('/admin/dashboard/order-distribution'),
+    cachedGet('/admin/dashboard/revenue-trend', { params: { period } }),
+  getOrderDistribution: () => cachedGet('/admin/dashboard/order-distribution'),
   getTopProducts: (limit) =>
-    api.get('/admin/dashboard/top-products', { params: { limit } }),
-  getDiscounts: () => api.get('/admin/discounts'),
-  createDiscount: (data) => api.post('/admin/discounts', data),
-  createBulkDiscount: (data) => api.post('/admin/discounts/bulk', data),
-  updateDiscount: (id, data) => api.put(`/admin/discounts/${id}`, data),
-  deleteDiscount: (id) => api.delete(`/admin/discounts/${id}`),
+    cachedGet('/admin/dashboard/top-products', { params: { limit } }),
+  getDiscounts: () => cachedGet('/admin/discounts'),
+  createDiscount: async (data) => {
+    const response = await api.post('/admin/discounts', data);
+    clearPrivateCache();
+    return response;
+  },
+  createBulkDiscount: async (data) => {
+    const response = await api.post('/admin/discounts/bulk', data);
+    clearPrivateCache();
+    return response;
+  },
+  updateDiscount: async (id, data) => {
+    const response = await api.put(`/admin/discounts/${id}`, data);
+    clearPrivateCache();
+    return response;
+  },
+  deleteDiscount: async (id) => {
+    const response = await api.delete(`/admin/discounts/${id}`);
+    clearPrivateCache();
+    return response;
+  },
   downloadSummaryReport: () =>
     api.get('/admin/report/summary/pdf', { responseType: 'blob' }),
 };
 
 // Staff API
 export const staffAPI = {
-  getDashboardStats: () => api.get('/staff/dashboard/stats'),
+  getDashboardStats: () => cachedGet('/staff/dashboard/stats'),
 };
 
 export async function adminListContactMessages({ page = 1, limit = 20, q = '' } = {}) {
@@ -294,7 +480,7 @@ export async function adminListContactMessages({ page = 1, limit = 20, q = '' } 
 export const contactAPI = {
   // Admin list (GET /api/contact?page=&limit=&q=)
   getAll: ({ page = 1, limit = 20, q = '' } = {}) =>
-    api.get('/contact', { params: { page, limit, q } }),
+    cachedGet('/contact', { params: { page, limit, q } }),
 
   // (Optional) Public submit if you wire the form to backend:
   // create: (payload) => api.post('/contact', payload),

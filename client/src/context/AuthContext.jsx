@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import { authAPI, clearPrivateCache } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(data);
       
       if (response.data.success) {
+        clearPrivateCache();
         localStorage.setItem('token', response.data.token);
         setUser(response.data.user);
         toast.success('Registration successful!');
@@ -60,6 +61,7 @@ export const AuthProvider = ({ children }) => {
     // Pattern 1: login(token, user) - direct login with token and user object
     if (typeof passwordOrUser === 'object' && passwordOrUser !== null) {
       localStorage.setItem('token', emailOrToken);
+      clearPrivateCache();
       setUser(passwordOrUser);
       return { success: true, user: passwordOrUser };
     }
@@ -69,6 +71,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login({ email: emailOrToken, password: passwordOrUser });
       
       if (response.data.success) {
+        clearPrivateCache();
         localStorage.setItem('token', response.data.token);
         setUser(response.data.user);
         toast.success('Login successful!');
@@ -84,6 +87,7 @@ export const AuthProvider = ({ children }) => {
   // Logout
   const logout = () => {
     localStorage.removeItem('token');
+    clearPrivateCache();
     setUser(null);
     toast.success('Logged out successfully');
   };
