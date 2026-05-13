@@ -246,10 +246,13 @@ export const authAPI = {
   resetPassword: (data) => api.post('/auth/reset-password', data),
 
   
-  updateProfile: (data) =>
-    api.put('/auth/profile', data, {
+  updateProfile: async (data) => {
+    const response = await api.put('/auth/profile', data, {
       headers: isFormData(data) ? { 'Content-Type': 'multipart/form-data' } : {},
-    }),
+    });
+    clearPrivateCache();
+    return response;
+  },
 
   changePassword: (data) => api.put('/auth/change-password', data),
 };
