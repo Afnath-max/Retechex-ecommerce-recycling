@@ -1,6 +1,30 @@
-# ReTechEx Ecommerce Recycling Platform
+# ReTechExchange
 
-ReTechEx is a full stack e-waste recycling and ecommerce platform built with React, Vite, Express, MongoDB, and Tailwind CSS. The application supports customer recycling appointments, marketplace purchases, cart and wishlist flows, order tracking, admin management, staff operations, discounts, contact messages, and PDF report generation.
+<p align="center">
+  <img src="docs/images/retechex-hero.png" alt="ReTechExchange full stack e-waste recycling and ecommerce platform" width="100%">
+</p>
+
+<p align="center">
+  <strong>Full-stack e-waste recycling and ecommerce platform for sustainable refurbished electronics workflows.</strong>
+</p>
+
+<p align="center">
+  <a href="https://retechex-ecommerce-recycling.vercel.app">Live Frontend</a>
+  ·
+  <a href="https://server-afn-max.vercel.app">Backend API</a>
+  ·
+  <a href="https://server-afn-max.vercel.app/health">Health Check</a>
+</p>
+
+<p align="center">
+  <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=111827">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-Frontend-646CFF?logo=vite&logoColor=white">
+  <img alt="Express" src="https://img.shields.io/badge/Express-API-111827?logo=express&logoColor=white">
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white">
+  <img alt="Vercel" src="https://img.shields.io/badge/Vercel-Deployed-000000?logo=vercel&logoColor=white">
+</p>
+
+ReTechExchange is a full-stack e-waste recycling and ecommerce platform built with React, Vite, Express, MongoDB, and Tailwind CSS. The application supports customer recycling appointments, marketplace purchases, cart and wishlist flows, order tracking, admin management, staff operations, discounts, contact messages, persistent uploads, and PDF report generation.
 
 ## Academic Project Details
 
@@ -10,7 +34,7 @@ This repository was developed as a student group project for the Information Tec
 |---|---|
 | Module | IT2080 - Information Technology Project |
 | Project Type | Group Project |
-| Project Title | ReTechEx Ecommerce Recycling Platform |
+| Project Title | ReTechExchange Ecommerce Recycling Platform |
 | Student Registration Number | IT23833548 |
 | Student Name | Afnath Ahamed |
 | GitHub Repository | https://github.com/Afnath-max/Retechex-ecommerce-recycling |
@@ -22,27 +46,15 @@ This repository was developed as a student group project for the Information Tec
 
 ReTechEx focuses on building a practical web based solution for e-waste recycling and refurbished electronics ecommerce. The system includes separate user experiences for customers, staff members, and administrators, allowing the group project to demonstrate project planning, full stack development, role based workflows, database design, and real world usability considerations.
 
-## Application Screenshots
+## Project Showcase
 
-### Home Page
+ReTechExchange combines a customer marketplace, appointment based e-waste collection, and operational dashboards for staff and administrators. The platform is designed around three role based workflows:
 
-<img src="docs/images/home-page.png" alt="ReTechEx home page" width="100%">
-
-### Marketplace
-
-<img src="docs/images/marketplace-page.png" alt="ReTechEx marketplace page" width="100%">
-
-### Customer Login
-
-<img src="docs/images/customer-login-page.png" alt="ReTechEx customer login page" width="100%">
-
-### Admin Login
-
-<img src="docs/images/admin-login-page.png" alt="ReTechEx admin login page" width="100%">
-
-### Staff Login
-
-<img src="docs/images/staff-login-page.png" alt="ReTechEx staff login page" width="100%">
+| Role | Experience |
+|---|---|
+| Customer | Browse refurbished electronics, manage cart and wishlist, place orders, and book recycling appointments |
+| Staff | Process appointments, manage operational orders, and update inventory stock |
+| Admin | Manage users, products, discounts, orders, appointments, reports, and contact messages |
 
 ## Project Overview
 
