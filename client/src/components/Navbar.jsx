@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import { useAuth } from '../context/AuthContext';
+import { preloadDashboardRoute, preloadRoute } from '../routes/preloadRoutes';
 
 const links = [
   { to: '/', label: 'HOME' },
@@ -15,6 +16,11 @@ const navLinkClass = ({ isActive }) =>
     'group relative px-4 py-2 text-[15px] font-extrabold tracking-wide uppercase transition-colors',
     isActive ? 'text-slate-900' : 'text-slate-700 hover:text-slate-900',
   ].join(' ');
+
+const preloadHandlers = (to) => ({
+  onPointerEnter: () => preloadRoute(to),
+  onFocus: () => preloadRoute(to),
+});
 
 /* -------------------- Helpers -------------------- */
 function normalizePath(p) { if (!p) return ''; return p.startsWith('/') ? p : `/${p}`; }
@@ -92,6 +98,8 @@ export default function Navbar() {
           {/* Brand */}
           <button
             onClick={() => navigate('/')}
+            onPointerEnter={() => preloadRoute('/')}
+            onFocus={() => preloadRoute('/')}
             className="flex items-center gap-3 group"
             aria-label="ReTechExchange"
           >
@@ -104,7 +112,7 @@ export default function Navbar() {
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-1">
             {links.map((l) => (
-              <NavLink key={l.to} to={l.to} end className={navLinkClass}>
+              <NavLink key={l.to} to={l.to} end className={navLinkClass} {...preloadHandlers(l.to)}>
                 {({ isActive }) => (
                   <span
                     className={[
@@ -137,12 +145,16 @@ export default function Navbar() {
                 {/* desktop pills */}
                 <button
                   onClick={() => navigate('/login')}
+                  onPointerEnter={() => preloadRoute('/login')}
+                  onFocus={() => preloadRoute('/login')}
                   className="hidden md:inline-flex items-center justify-center whitespace-nowrap shrink-0 px-6 h-11 rounded-full border border-slate-300 text-slate-800 font-semibold hover:bg-slate-50 transition"
                 >
                   Log in
                 </button>
                 <button
                   onClick={() => navigate('/register')}
+                  onPointerEnter={() => preloadRoute('/register')}
+                  onFocus={() => preloadRoute('/register')}
                   className="hidden md:inline-flex items-center justify-center whitespace-nowrap shrink-0 px-7 h-11 rounded-full text-white font-semibold bg-gradient-to-r from-indigo-600 via-blue-600 to-teal-500 hover:opacity-95 shadow-md transition"
                 >
                   Sign up
@@ -188,24 +200,32 @@ export default function Navbar() {
                     <div className="space-y-1.5">
                       <button
                         onClick={() => { navigate('/edit-profile'); setMenuOpen(false); }}
+                        onPointerEnter={() => preloadRoute('/edit-profile')}
+                        onFocus={() => preloadRoute('/edit-profile')}
                         className="w-full text-left rounded-lg px-3 py-2 hover:bg-slate-50 font-medium"
                       >
                         Edit Profile
                       </button>
                       <button
                         onClick={() => { navigate('/my-orders'); setMenuOpen(false); }}
+                        onPointerEnter={() => preloadRoute('/my-orders')}
+                        onFocus={() => preloadRoute('/my-orders')}
                         className="w-full text-left rounded-lg px-3 py-2 hover:bg-slate-50"
                       >
                         My Orders
                       </button>
                       <button
                         onClick={() => { navigate('/my-appointments'); setMenuOpen(false); }}
+                        onPointerEnter={() => preloadRoute('/my-appointments')}
+                        onFocus={() => preloadRoute('/my-appointments')}
                         className="w-full text-left rounded-lg px-3 py-2 hover:bg-slate-50"
                       >
                         My Appointments
                       </button>
                       <button
                         onClick={() => { navigate('/cart'); setMenuOpen(false); }}
+                        onPointerEnter={() => preloadRoute('/cart')}
+                        onFocus={() => preloadRoute('/cart')}
                         className="w-full text-left rounded-lg px-3 py-2 hover:bg-slate-50"
                       >
                         My Cart
@@ -213,6 +233,8 @@ export default function Navbar() {
                       {(isAdmin || isStaff) && (
                         <button
                           onClick={() => { goDashboard(); setMenuOpen(false); }}
+                          onPointerEnter={() => preloadDashboardRoute({ isAdmin, isStaff })}
+                          onFocus={() => preloadDashboardRoute({ isAdmin, isStaff })}
                           className="w-full text-left rounded-lg px-3 py-2 hover:bg-slate-50"
                         >
                           Dashboard
@@ -235,8 +257,9 @@ export default function Navbar() {
             {/* Mobile hamburger */}
             <button
               className="lg:hidden inline-flex items-center justify-center h-11 w-11 rounded-xl border border-slate-200"
-              onClick={() => setOpen((v) => !v)}
-              aria-label="Toggle menu"
+                  onClick={() => setOpen((v) => !v)}
+                  onPointerEnter={() => links.forEach((link) => preloadRoute(link.to))}
+                  aria-label="Toggle menu"
             >
               {open ? '✕' : '☰'}
             </button>
@@ -253,6 +276,7 @@ export default function Navbar() {
                   to={l.to}
                   end
                   onClick={() => setOpen(false)}
+                  {...preloadHandlers(l.to)}
                   className="px-4 py-3 rounded-lg hover:bg-slate-50"
                 >
                   {l.label}
@@ -265,12 +289,16 @@ export default function Navbar() {
                 <div className="grid grid-cols-2 gap-2 px-1 pt-2">
                   <button
                     onClick={() => { navigate('/login'); setOpen(false); }}
+                    onPointerEnter={() => preloadRoute('/login')}
+                    onFocus={() => preloadRoute('/login')}
                     className="h-11 rounded-full border border-slate-300 font-semibold hover:bg-slate-50"
                   >
                     Log in
                   </button>
                   <button
                     onClick={() => { navigate('/register'); setOpen(false); }}
+                    onPointerEnter={() => preloadRoute('/register')}
+                    onFocus={() => preloadRoute('/register')}
                     className="h-11 rounded-full text-white font-semibold bg-gradient-to-r from-indigo-600 via-blue-600 to-teal-500 hover:opacity-95 shadow-md"
                   >
                     Sign up

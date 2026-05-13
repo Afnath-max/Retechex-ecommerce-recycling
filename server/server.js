@@ -57,6 +57,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Health check
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'ReTechEx API is running',
+    health: '/health',
+    api: '/api'
+  });
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
