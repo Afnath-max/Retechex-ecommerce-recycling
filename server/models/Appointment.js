@@ -103,6 +103,12 @@ appointmentSchema.pre('save', async function(next) {
   next();
 });
 
+appointmentSchema.index({ user: 1, appointmentDate: -1 });
+appointmentSchema.index({ status: 1, appointmentDate: -1 });
+appointmentSchema.index({ branch: 1, appointmentDate: -1 });
+appointmentSchema.index({ appointmentDate: -1, appointmentTime: -1 });
+appointmentSchema.index({ createdAt: -1 });
+
 const Appointment = mongoose.model('Appointment', appointmentSchema);
 
 export default Appointment;

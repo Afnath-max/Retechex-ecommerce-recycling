@@ -101,5 +101,7 @@ userSchema.methods.toJSON = function() {
 // Indexes
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ createdAt: -1 });
 
 export default mongoose.model('User', userSchema);

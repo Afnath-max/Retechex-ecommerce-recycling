@@ -3,6 +3,12 @@ import Discount from '../models/Discount.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { saveUploadedImage } from '../utils/fileStorage.js';
 
+const calculateFinalPrice = (price, discount) => {
+  if (!discount || !discount.isActive) return price;
+  if (discount.type === 'percentage') return price * (1 - discount.value / 100);
+  return Math.max(0, price - discount.value);
+};
+
 // @desc    Get all products with filters
 // @route   GET /api/products
 // @access  Public
@@ -55,22 +61,22 @@ export const getProducts = asyncHandler(async (req, res) => {
     sortQuery.createdAt = sortOrder;
   }
 
-  // Execute query
-  const products = await Product.find(query)
-    .sort(sortQuery)
-    .limit(Number(limit))
-    .skip(skip)
-    .populate('activeDiscount');
-
-  // Get total count for pagination
-  const total = await Product.countDocuments(query);
+  const [products, total] = await Promise.all([
+    Product.find(query)
+      .sort(sortQuery)
+      .limit(Number(limit))
+      .skip(skip)
+      .populate('activeDiscount')
+      .lean({ virtuals: true }),
+    Product.countDocuments(query)
+  ]);
 
   // Calculate final prices with discounts
   const productsWithPrices = products.map(product => {
-    const productObj = product.toObject();
+    const productObj = { ...product };
     
     if (product.activeDiscount && product.activeDiscount.isActive) {
-      productObj.finalPrice = product.getFinalPrice(product.activeDiscount);
+      productObj.finalPrice = calculateFinalPrice(product.price, product.activeDiscount);
       productObj.hasDiscount = true;
       productObj.discount = product.activeDiscount;
     } else {
@@ -95,17 +101,19 @@ export const getProducts = asyncHandler(async (req, res) => {
 // @route   GET /api/products/:id
 // @access  Public
 export const getProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id).populate('activeDiscount');
+  const product = await Product.findById(req.params.id)
+    .populate('activeDiscount')
+    .lean({ virtuals: true });
 
   if (!product) {
     res.status(404);
     throw new Error('Product not found');
   }
 
-  const productObj = product.toObject();
+  const productObj = { ...product };
   
   if (product.activeDiscount && product.activeDiscount.isActive) {
-    productObj.finalPrice = product.getFinalPrice(product.activeDiscount);
+    productObj.finalPrice = calculateFinalPrice(product.price, product.activeDiscount);
     productObj.hasDiscount = true;
     productObj.discount = product.activeDiscount;
   } else {
@@ -282,7 +290,7 @@ export const getLowStockProducts = asyncHandler(async (req, res) => {
   const products = await Product.find({
     stockQuantity: { $lte: Number(threshold), $gt: 0 },
     status: 'listed'
-  }).sort({ stockQuantity: 1 });
+  }).sort({ stockQuantity: 1 }).lean();
 
   res.json({
     success: true,
@@ -298,7 +306,7 @@ export const getLowStockProducts = asyncHandler(async (req, res) => {
 export const getOutOfStockProducts = asyncHandler(async (req, res) => {
   const products = await Product.find({
     stockQuantity: 0
-  }).sort({ updatedAt: -1 });
+  }).sort({ updatedAt: -1 }).lean();
 
   res.json({
     success: true,

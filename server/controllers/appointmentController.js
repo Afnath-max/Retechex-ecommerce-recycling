@@ -113,12 +113,14 @@ export const getMyAppointments = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const appointments = await Appointment.find(query)
-    .sort({ appointmentDate: -1, appointmentTime: -1 })
-    .limit(Number(limit))
-    .skip(skip);
-
-  const total = await Appointment.countDocuments(query);
+  const [appointments, total] = await Promise.all([
+    Appointment.find(query)
+      .sort({ appointmentDate: -1, appointmentTime: -1 })
+      .limit(Number(limit))
+      .skip(skip)
+      .lean(),
+    Appointment.countDocuments(query)
+  ]);
 
   res.json({
     success: true,
@@ -133,7 +135,9 @@ export const getMyAppointments = asyncHandler(async (req, res) => {
 // @route   GET /api/appointments/:id
 // @access  Private
 export const getAppointment = asyncHandler(async (req, res) => {
-  const appointment = await Appointment.findById(req.params.id).populate('user', 'name email phone');
+  const appointment = await Appointment.findById(req.params.id)
+    .populate('user', 'name email phone')
+    .lean();
 
   if (!appointment) {
     res.status(404);
@@ -258,13 +262,15 @@ export const getAllAppointments = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const appointments = await Appointment.find(query)
-    .populate('user', 'name email')
-    .sort({ appointmentDate: -1 })
-    .limit(Number(limit))
-    .skip(skip);
-
-  const total = await Appointment.countDocuments(query);
+  const [appointments, total] = await Promise.all([
+    Appointment.find(query)
+      .populate('user', 'name email')
+      .sort({ appointmentDate: -1 })
+      .limit(Number(limit))
+      .skip(skip)
+      .lean(),
+    Appointment.countDocuments(query)
+  ]);
 
   res.json({
     success: true,
@@ -349,7 +355,8 @@ export const downloadAppointmentsReportPDF = asyncHandler(async (req, res) => {
 
   const appointments = await Appointment.find(query)
     .sort({ appointmentDate: -1 })
-    .populate('user', 'name email');
+    .populate('user', 'name email')
+    .lean();
 
   try {
     const pdfPath = await generateAppointmentsReportPDF(appointments, req.query);

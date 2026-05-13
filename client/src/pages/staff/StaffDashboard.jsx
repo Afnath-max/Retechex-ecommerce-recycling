@@ -19,66 +19,22 @@ const StaffDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Get all appointments from backend (without status filter first)
+      const now = new Date();
+      const today = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, '0'),
+        String(now.getDate()).padStart(2, '0'),
+      ].join('-');
+
       const [statsRes, appointmentsRes, ordersRes, lowStockRes] = await Promise.all([
         staffAPI.getDashboardStats(),
-        appointmentsAPI.getAll({ limit: 100, page: 1 }), // Fetch ALL without status filter
+        appointmentsAPI.getAll({ limit: 5, page: 1, date: today }),
         ordersAPI.getAll({ orderStatus: 'Processing' }),
         productsAPI.getLowStock(10),
       ]);
 
       setStats(statsRes.data.stats);
-
-      // Get today's date in the SAME way the backend stores appointments
-      // Backend uses: new Date(year, month - 1, day, 12, 0, 0, 0)
-      // Which creates a date at noon in LOCAL timezone
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
-      const currentDate = now.getDate();
-
-      // Create a date object the same way backend does
-      const todayStart = new Date(currentYear, currentMonth, currentDate, 0, 0, 0, 0);
-      const todayEnd = new Date(currentYear, currentMonth, currentDate, 23, 59, 59, 999);
-
-      // Debug: Log what we're working with
-      console.log('Today local date:', { currentYear, currentMonth, currentDate });
-      console.log('All appointments fetched:', appointmentsRes.data.appointments?.length);
-      
-      // Filter appointments that fall within today's local date range
-      const filteredAppointments = (appointmentsRes.data.appointments || []).filter((apt) => {
-        if (!apt.appointmentDate) {
-          console.log('No appointmentDate on:', apt);
-          return false;
-        }
-        
-        // Parse the appointment date string
-        const appointmentDate = new Date(apt.appointmentDate);
-        
-        // Compare in local time, not UTC
-        // Extract just the year, month, day in local time
-        const apptYear = appointmentDate.getFullYear();
-        const apptMonth = appointmentDate.getMonth();
-        const apptDate = appointmentDate.getDate();
-        
-        console.log('Comparing appointment:', {
-          raw: apt.appointmentDate,
-          parsed: appointmentDate.toString(),
-          extracted: { apptYear, apptMonth, apptDate },
-          matches: apptYear === currentYear && apptMonth === currentMonth && apptDate === currentDate
-        });
-        
-        // Check if it matches today's local date
-        return (
-          apptYear === currentYear &&
-          apptMonth === currentMonth &&
-          apptDate === currentDate
-        );
-      });
-      
-      console.log('Filtered today appointments:', filteredAppointments);
-
-      setTodayAppointments(filteredAppointments.slice(0, 5));
+      setTodayAppointments((appointmentsRes.data.appointments || []).slice(0, 5));
       setPendingOrders((ordersRes.data.orders || []).slice(0, 5));
       setLowStockProducts((lowStockRes.data.products || []).slice(0, 5));
     } catch (error) {

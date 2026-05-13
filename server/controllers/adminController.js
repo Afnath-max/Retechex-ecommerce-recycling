@@ -22,13 +22,15 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const users = await User.find(query)
-    .select('-password')
-    .sort({ createdAt: -1 })
-    .limit(Number(limit))
-    .skip(skip);
-
-  const total = await User.countDocuments(query);
+  const [users, total] = await Promise.all([
+    User.find(query)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip(skip)
+      .lean(),
+    User.countDocuments(query)
+  ]);
 
   res.json({
     success: true,
@@ -121,25 +123,35 @@ export const updateUserRole = asyncHandler(async (req, res) => {
 
 // Dashboard statistics
 export const getDashboardStats = asyncHandler(async (req, res) => {
-  const totalUsers = await User.countDocuments();
-  const totalProducts = await Product.countDocuments();
-  const totalOrders = await Order.countDocuments();
-  const totalRevenue = await Order.aggregate([
-    { $match: { orderStatus: { $ne: 'Cancelled' } } },
-    { $group: { _id: null, total: { $sum: '$totalAmount' } } }
-  ]);
-
-  const pendingOrders = await Order.countDocuments({ orderStatus: 'Processing' });
-  const pendingAppointments = await Appointment.countDocuments({ status: 'Pending' });
-  const lowStockProducts = await Product.countDocuments({ stockQuantity: { $lte: 10, $gt: 0 } });
-
-  // This month stats
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const newUsersThisMonth = await User.countDocuments({ createdAt: { $gte: startOfMonth } });
-  const ordersThisMonth = await Order.countDocuments({ createdAt: { $gte: startOfMonth } });
-  const revenueThisMonth = await Order.aggregate([
-    { $match: { createdAt: { $gte: startOfMonth }, orderStatus: { $ne: 'Cancelled' } } },
-    { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+  const [
+    totalUsers,
+    totalProducts,
+    totalOrders,
+    totalRevenue,
+    pendingOrders,
+    pendingAppointments,
+    lowStockProducts,
+    newUsersThisMonth,
+    ordersThisMonth,
+    revenueThisMonth
+  ] = await Promise.all([
+    User.countDocuments(),
+    Product.countDocuments(),
+    Order.countDocuments(),
+    Order.aggregate([
+      { $match: { orderStatus: { $ne: 'Cancelled' } } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ]),
+    Order.countDocuments({ orderStatus: 'Processing' }),
+    Appointment.countDocuments({ status: 'Pending' }),
+    Product.countDocuments({ stockQuantity: { $lte: 10, $gt: 0 } }),
+    User.countDocuments({ createdAt: { $gte: startOfMonth } }),
+    Order.countDocuments({ createdAt: { $gte: startOfMonth } }),
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startOfMonth }, orderStatus: { $ne: 'Cancelled' } } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ])
   ]);
 
   res.json({
@@ -319,7 +331,8 @@ export const getTopProducts = asyncHandler(async (req, res) => {
   const topProducts = await Product.find()
     .sort({ sales: -1 })
     .limit(Number(limit))
-    .select('name category sales price');
+    .select('name category sales price')
+    .lean();
 
   res.json({
     success: true,
@@ -344,7 +357,8 @@ export const createDiscount = asyncHandler(async (req, res) => {
 export const getAllDiscounts = asyncHandler(async (req, res) => {
   const discounts = await Discount.find()
     .populate('productId', 'name category')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   res.json({
     success: true,

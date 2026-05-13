@@ -27,11 +27,23 @@ export const createContactMessage = async (req, res) => {
 // (Optional) Admin list
 export const listContactMessages = async (req, res) => {
   try {
-    const { page=1, limit=20 } = req.query;
+    const { page=1, limit=20, q = '' } = req.query;
     const skip = (Number(page)-1)*Number(limit);
+    const query = q
+      ? {
+          $or: [
+            { name: { $regex: q, $options: 'i' } },
+            { email: { $regex: q, $options: 'i' } },
+            { phone: { $regex: q, $options: 'i' } },
+            { topic: { $regex: q, $options: 'i' } },
+            { branch: { $regex: q, $options: 'i' } },
+            { message: { $regex: q, $options: 'i' } },
+          ],
+        }
+      : {};
     const [items, total] = await Promise.all([
-      ContactMessage.find().sort({ createdAt:-1 }).skip(skip).limit(Number(limit)),
-      ContactMessage.countDocuments()
+      ContactMessage.find(query).sort({ createdAt:-1 }).skip(skip).limit(Number(limit)).lean(),
+      ContactMessage.countDocuments(query)
     ]);
     res.json({ success:true, total, page:Number(page), items });
   } catch (e) {

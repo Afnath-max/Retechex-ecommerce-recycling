@@ -15,4 +15,7 @@ const contactMessageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+contactMessageSchema.index({ createdAt: -1 });
+contactMessageSchema.index({ name: 'text', email: 'text', phone: 'text', topic: 'text', branch: 'text', message: 'text' });
+
 export default mongoose.model('ContactMessage', contactMessageSchema);

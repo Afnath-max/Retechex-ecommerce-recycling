@@ -169,6 +169,12 @@ const networkProductsRequest = async (params = {}) => {
   return response;
 };
 
+const normalizeOrderParams = (params = {}) => {
+  if (!params?.orderStatus || params.status) return params;
+  const { orderStatus, ...rest } = params;
+  return { ...rest, status: orderStatus };
+};
+
 const scheduleIdle = (task) => {
   if (typeof window === 'undefined') return;
   if ('requestIdleCallback' in window) {
@@ -339,7 +345,7 @@ export const ordersAPI = {
     clearPrivateCache();
     return response;
   },
-  getAll: (params) => cachedGet('/orders/all/list', { params }),
+  getAll: (params) => cachedGet('/orders/all/list', { params: normalizeOrderParams(params) }),
   updateStatus: async (id, data) => {
     const response = await api.patch(`/orders/${id}/status`, data);
     clearPrivateCache();
@@ -467,16 +473,8 @@ export const staffAPI = {
 };
 
 export async function adminListContactMessages({ page = 1, limit = 20, q = '' } = {}) {
-  const params = new URLSearchParams({ page, limit, q });
-  const res = await fetch(`/api/contact?${params.toString()}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  const data = await res.json();
-  if (!res.ok || !data?.success) {
-    throw new Error(data?.message || 'Failed to fetch contact messages');
-  }
-  return data;
+  const response = await cachedGet('/contact', { params: { page, limit, q } });
+  return response.data;
 }
 
 // Contact API
@@ -485,8 +483,11 @@ export const contactAPI = {
   getAll: ({ page = 1, limit = 20, q = '' } = {}) =>
     cachedGet('/contact', { params: { page, limit, q } }),
 
-  // (Optional) Public submit if you wire the form to backend:
-  // create: (payload) => api.post('/contact', payload),
+  create: async (payload) => {
+    const response = await api.post('/contact', payload);
+    clearPrivateCache();
+    return response;
+  },
 };
 
 export default api;

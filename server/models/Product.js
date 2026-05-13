@@ -146,6 +146,9 @@ productSchema.statics.getDiscountedProducts = async function() {
 // Indexes
 productSchema.index({ name: 'text', description: 'text', brand: 'text' });
 productSchema.index({ category: 1, status: 1 });
+productSchema.index({ status: 1, createdAt: -1 });
+productSchema.index({ status: 1, price: 1 });
+productSchema.index({ status: 1, stockQuantity: 1 });
 productSchema.index({ stockQuantity: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ createdAt: -1 });

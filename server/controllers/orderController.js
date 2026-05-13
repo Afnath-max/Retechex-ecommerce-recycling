@@ -158,13 +158,15 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const orders = await Order.find(query)
-    .populate('items.product')
-    .sort({ createdAt: -1 })
-    .limit(Number(limit))
-    .skip(skip);
-
-  const total = await Order.countDocuments(query);
+  const [orders, total] = await Promise.all([
+    Order.find(query)
+      .populate('items.product')
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip(skip)
+      .lean(),
+    Order.countDocuments(query)
+  ]);
 
   res.json({
     success: true,
@@ -182,7 +184,8 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 export const getOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id)
     .populate('items.product')
-    .populate('user', 'name email phone');
+    .populate('user', 'name email phone')
+    .lean();
 
   if (!order) {
     res.status(404);
@@ -402,14 +405,16 @@ export const getAllOrders = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const orders = await Order.find(query)
-    .populate('user', 'name email phone')
-    .populate('items.product', 'name category')
-    .sort({ createdAt: -1 })
-    .limit(Number(limit))
-    .skip(skip);
-
-  const total = await Order.countDocuments(query);
+  const [orders, total] = await Promise.all([
+    Order.find(query)
+      .populate('user', 'name email phone')
+      .populate('items.product', 'name category')
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip(skip)
+      .lean(),
+    Order.countDocuments(query)
+  ]);
 
   res.json({
     success: true,
